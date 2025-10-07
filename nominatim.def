@@ -108,6 +108,21 @@ From: ubuntu:24.04
   cp /app/conf/postgresql.conf $PGDATA/postgresql.conf
   cp /app/conf/pg_hba.conf $PGDATA/pg_hba.conf
 
+  # start PostgreSQL
+  echo "Starting PostgreSQL..."
+  su pguser -c "/usr/lib/postgresql/16/bin/pgctl -D $PGDATA -l /app/postgresql/log/build.log start"
+
+  for i in {1..30}; do
+    if su pguser -c "/usr/lib/postgresql/16/bin/pg_isready -h localhost -p 5432"; then
+      echo "PostgreSQL is ready for database build!"
+      break
+    fi
+    echo "Waiting for PostgreSQL during build... ($i/30)"
+    sleep 2
+  done
+
+
+
 
 %runscript
   #!/bin/bash

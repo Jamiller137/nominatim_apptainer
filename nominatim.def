@@ -82,6 +82,15 @@ From: ubuntu:24.04
     python3-gdal \
     sudo
 
+  # Install Python packages:
+  pip install --break-system-packages \
+    nominatim-db==$NOMINATIM_VERSSION \
+    nominatim-api==$NOMINATIM_VERSION \
+    osmium \
+    'psycopg[binary]' \
+    aiosqlite \
+
+
 %runscript
   #!/bin/bash
   echo "Nominatim placeholder container ready."

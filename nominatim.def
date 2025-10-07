@@ -113,7 +113,7 @@ From: ubuntu:24.04
 
   # start PostgreSQL
   echo "Starting PostgreSQL..."
-  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA -l /app/postgresql/log/build.log start"
+  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA -o '-k $POSTGRES_RUN_DIR' -l /app/postgresql/log/build.log start"
 
   for i in {1..30}; do
     if su pguser -c "/usr/lib/postgresql/16/bin/pg_isready -h $POSTGRES_RUN_DIR -p 5432"; then

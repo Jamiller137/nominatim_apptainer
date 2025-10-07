@@ -251,7 +251,30 @@ EOF
 
 %runscript
   #!/bin/bash
-  echo "Nominatim placeholder container ready."
+  echo "Nominatim database is ready."
+  echo "Database: /nominatim/nominatim.sqlite"
+  echo "Size: $(du -h /nominatim/nominatim.sqlite 2>/dev/null || echo 'Unknown')"
+
+  # commands
+  if [ "$1" = "python" ]; then
+      shift
+      python3 "$@"
+  elif [ "$1" = "bash" ]; then
+      /bin/bash
+  elif [ "$1" = "python3" ]; then
+      shift
+      python3 "$@"
+  elif [ "$#" -gt 0 ]; then
+      # Execute the provided command
+      exec "$@"
+  else
+      echo "Container ready. Database contains data in SQLite format at /nominatim/nominatim.sqlite..."
+      echo "Usage:"
+      echo "  apptainer run nominatim.sif python3 script.py"
+      echo "  apptainer run nominatim.sif bash"
+      /bin/bash
+  fi
+
 
 %help
   A base for the container. Defines Ubuntu 24.04 as the base image. With postgres supporty.

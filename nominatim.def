@@ -21,7 +21,13 @@ From: ubuntu:24.04
 
 
 %environment
-  # to be added
+  # when building the container this avoids having to enter locale imformation
+  export DEBIAN_FRONTEND=noninteractive
+  export LANG=C.UTF-8
+
+  # nominatim env var
+  export PROJECT_DIR=/nominatim
+  export USER_AGENT=mediagis/nominatim-docker:{{ NOMINATIM_VERSION }}
 
 %post
   # build to be added

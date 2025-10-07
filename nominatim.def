@@ -231,7 +231,7 @@ EOF
 
   # sotp postgresql after conversion:
   echo "Stopping PostgreSQL..."
-  su pguser -c "/user/lib/postgresql/16/bin/pg_ctl -D $PGDATA stop"
+  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA stop"
 
   # Clean up:
   echo "Cleaning up build files..."

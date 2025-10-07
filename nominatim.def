@@ -12,6 +12,9 @@ From: ubuntu:24.04
   conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
   conf.d/env /nominatim/.env
 
+  # Nominatim configuration files:
+  nominatim_project/config.sh /app/config.sh
+
   # Open Street Map (OSM) data:
   nominatim_project/iowa-latest.osm.pbf /app/data/iowa-latest.osm.pbf
 
@@ -145,11 +148,9 @@ From: ubuntu:24.04
   echo "Verifying database users..."
   su pguser -c "psql -h localhost -p 5432 -d postgres -c '\\du'"
 
-
-
-
-
-
+  # run config.sh to setup .env file:
+  echo "Configuring Nominatim using config.sh..."
+  /app/config.sh
 
 
 %runscript

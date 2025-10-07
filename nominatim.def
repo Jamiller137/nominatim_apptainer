@@ -37,6 +37,10 @@ From: ubuntu:24.04
   export PBF_PATH=/app/data/iowa-latest.osm.pbf
   export IMPORT_STYLE=full
 
+  # working dir 
+  mkdir -p /app 
+  cd /app
+
 %runscript
   #!/bin/bash
   echo "Nominatim placeholder container ready."

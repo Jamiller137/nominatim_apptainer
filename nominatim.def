@@ -10,6 +10,14 @@ From: ubuntu:24.04
   conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
   conf.d/env /nominatim/.env
 
+  # Open Street Map (OSM) data:
+  nominatim_project/iowa-latest.osm.pbf /app/data/iowa-latest.osm.pbf
+
+  # Additional Metadata:
+  nominatim_project/secondary_importance.sql.gz /app/data/secondary_importance.sql.gz
+  nominatim_project/us_postcodes.csv.gz /app/data/us_postcodes.csv.gz
+  nominatim_project/wikimedia-importance.csv.gz /app/data/wikimedia-importance.csv.gz
+  nominatim_project/tiger-nominatim-preprocessed-latest.csv.tar.gz /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz
 
 
 %environment

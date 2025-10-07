@@ -6,6 +6,8 @@ From: ubuntu:24.04
 
 %files
   # postgres configuration files:
+  conf.d/postgresql.conf /app/conf/postgresql.conf
+  conf.d/pg_hba.conf /app/conf/pg_hba.conf
   conf.d/postgres-import.conf /etc/postgresql/16/main/conf.d/postgres-import.conf.disabled
   conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
   conf.d/env /nominatim/.env
@@ -89,6 +91,22 @@ From: ubuntu:24.04
     osmium \
     'psycopg[binary]' \
     aiosqlite \
+
+  # non-root postgresql user:
+  useradd -m -s /bin/bash pguser
+
+  # postgresql directories
+  mkdir -p $PGDATA $POSTGRES_RUN_DIR /app/postgresql/log
+  chown -R pguser:pguser /app/postgresql
+  chmod -R 755 /app/postgresql
+  
+  # initialize postgresql during build as pguser:
+  echo "build: Initializing PostgreSQL database as pguser..."
+  su pguser -c "/usr/lib/postgresql/16/bin/initdb -D $PGDATA --auth=trust"
+
+  # configure postgres
+  cp /app/conf/postgresql.conf $PGDATA/postgresql.conf
+  cp /app/conf/pg_hba.conf $PGDATA/pg_hba.conf
 
 
 %runscript

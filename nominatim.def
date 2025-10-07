@@ -89,8 +89,8 @@ From: ubuntu:24.04
 
   # Install Python packages:
   pip install --break-system-packages \
-    nominatim-db==$NOMINATIM_VERSSION \
-    nominatim-api==$NOMINATIM_VERSION \
+    nominatim-db==5.1.0 \
+    nominatim-api==5.1.0 \
     osmium \
     'psycopg[binary]' \
     aiosqlite \

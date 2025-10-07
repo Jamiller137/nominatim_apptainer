@@ -5,7 +5,12 @@ From: ubuntu:24.04
   NOMINATIM_VERSION=5.1.0
 
 %files
-  # will be added
+  # postgres configuration files:
+  conf.d/postgres-import.conf /etc/postgresql/16/main/conf.d/postgres-import.conf.disabled
+  conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
+  conf.d/env /nominatim/.env
+
+
 
 %environment
   # to be added
@@ -18,4 +23,4 @@ From: ubuntu:24.04
   echo "Nominatim placeholder container ready."
 
 %help
-  A base for the container. Defines Ubuntu 24.04 as the base image.
+  A base for the container. Defines Ubuntu 24.04 as the base image. With postgres supporty.

@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%arguments
+  NOMINATIM_VERSION=5.1.0
+
+%files
+  # will be added
+
+%environment
+  # to be added
+
+%post
+  # build to be added
+
+%runscript
+  #!/bin/bash
+  echo "Nominatim placeholder container ready."
+
+%help
+  A base for the container. Defines Ubuntu 24.04 as the base image.

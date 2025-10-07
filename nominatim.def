@@ -41,6 +41,10 @@ From: ubuntu:24.04
   mkdir -p /app 
   cd /app
 
+  # apt caching
+  rm -f /etc/apt/apt.conf.d/docker-clean
+  echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
 %runscript
   #!/bin/bash
   echo "Nominatim placeholder container ready."

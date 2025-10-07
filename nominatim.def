@@ -122,6 +122,34 @@ From: ubuntu:24.04
   done
 
 
+  # project dir:
+  mkdir -p /nominatim
+  chown pguser:pguser /nominatim
+  chmod 755 /nominatim
+  cd /nominatim
+
+  # create required users (nominatim and www-data) before we import:
+  echo "Creating nominatim and www-data users..."
+
+  # Create superuser roles
+  su pguser -c "createuser -h localhost -p 5432 --createdb --superuser root" 2>/dev/null || echo "User 'root' already exists"
+  su pguser -c "createuser -h localhost -p 5432 --createdb --superuser pguser" 2>/dev/null || echo "User 'pguser' already exists"
+
+  # Create www-data user (web server user)
+  su pguser -c "createuser -h localhost -p 5432 --no-createdb --no-superuser --no-createrole www-data" 2>/dev/null || echo "User 'www-data' already exists"
+
+  # Create nominatim read-only user 
+  su pguser -c "createuser -h localhost -p 5432 --no-createdb --no-superuser --no-createrole nominatim" 2>/dev/null || echo "User 'nominatim' already exists"
+
+  # Verify users were created (connect to the postgres database explicitly)
+  echo "Verifying database users..."
+  su pguser -c "psql -h localhost -p 5432 -d postgres -c '\\du'"
+
+
+
+
+
+
 
 
 %runscript

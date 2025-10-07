@@ -113,10 +113,10 @@ From: ubuntu:24.04
 
   # start PostgreSQL
   echo "Starting PostgreSQL..."
-  su pguser -c "/usr/lib/postgresql/16/bin/pgctl -D $PGDATA -l /app/postgresql/log/build.log start"
+  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA -l /app/postgresql/log/build.log start"
 
   for i in {1..30}; do
-    if su pguser -c "/usr/lib/postgresql/16/bin/pg_isready -h localhost -p 5432"; then
+    if su pguser -c "/usr/lib/postgresql/16/bin/pg_isready -h $POSTGRES_RUN_DIR -p 5432"; then
       echo "PostgreSQL is ready for database build!"
       break
     fi
@@ -135,25 +135,26 @@ From: ubuntu:24.04
   echo "Creating nominatim and www-data users..."
 
   # Create superuser roles
-  su pguser -c "createuser -h localhost -p 5432 --createdb --superuser root" 2>/dev/null || echo "User 'root' already exists"
-  su pguser -c "createuser -h localhost -p 5432 --createdb --superuser pguser" 2>/dev/null || echo "User 'pguser' already exists"
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --createdb --superuser root" 2>/dev/null || echo "User 'root' already exists"
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --createdb --superuser pguser" 2>/dev/null || echo "User 'pguser' already exists"
 
   # Create www-data user (web server user)
-  su pguser -c "createuser -h localhost -p 5432 --no-createdb --no-superuser --no-createrole www-data" 2>/dev/null || echo "User 'www-data' already exists"
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --no-createdb --no-superuser --no-createrole www-data" 2>/dev/null || echo "User 'www-data' already exists"
 
   # Create nominatim read-only user 
-  su pguser -c "createuser -h localhost -p 5432 --no-createdb --no-superuser --no-createrole nominatim" 2>/dev/null || echo "User 'nominatim' already exists"
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --no-createdb --no-superuser --no-createrole nominatim" 2>/dev/null || echo "User 'nominatim' already exists"
 
   # Verify users were created (connect to the postgres database explicitly)
   echo "Verifying database users..."
-  su pguser -c "psql -h localhost -p 5432 -d postgres -c '\\du'"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d postgres -c '\\du'"
 
   # run config.sh to setup .env file:
   echo "Configuring Nominatim using config.sh..."
+  chmod +x /app/config.sh
   /app/config.sh
 
   # add database DSN to .env
-  echo "NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5432;user=pguser;dbname=nominatim" >> /nominatim/.env
+  echo "NOMINATIM_DATABASE_DSN=pgsql:host=$POSTGRES_RUN_DIR;port=5432;user=pguser;dbname=nominatim" >> /nominatim/.env
 
   echo "Configuration before import:"
   cat /nominatim/.env
@@ -166,12 +167,12 @@ From: ubuntu:24.04
 
   # Grant permissions to users after database and tables are created
   echo "Granting database permissions..."
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO \"www-data\";'" || echo "Grant connect to www-data failed"
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO nominatim;'" || echo "Grant connect to nominatim failed"
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO \"www-data\";'" || echo "Grant usage to www-data failed"
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO nominatim;'" || echo "Grant usage to nominatim failed"
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"www-data\";'" || echo "Grant select to www-data failed"
-  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO nominatim;'" || echo "Grant select to nominatim failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO \"www-data\";'" || echo "Grant connect to www-data failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO nominatim;'" || echo "Grant connect to nominatim failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO \"www-data\";'" || echo "Grant usage to www-data failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO nominatim;'" || echo "Grant usage to nominatim failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"www-data\";'" || echo "Grant select to www-data failed"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO nominatim;'" || echo "Grant select to nominatim failed"
 
   # Import metadata
   echo "Trying to import Nominatim project metadata..."

@@ -30,7 +30,12 @@ From: ubuntu:24.04
   export USER_AGENT=mediagis/nominatim-docker:{{ NOMINATIM_VERSION }}
 
 %post
-  # build to be added
+  export NOMINATIM_VERSION={{ NOMINATIM_VERSION }}
+  export PGDATA=/app/postgresql/data
+  export POSTGRES_RUN_DIR=/app/postgresql/run
+  export PROJECT_DIR=/nominatim
+  export PBF_PATH=/app/data/iowa-latest.osm.pbf
+  export IMPORT_STYLE=full
 
 %runscript
   #!/bin/bash

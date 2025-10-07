@@ -45,6 +45,10 @@ From: ubuntu:24.04
   rm -f /etc/apt/apt.conf.d/docker-clean
   echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
+  # no daemons: since no init system package post-install scripts may try to start a service that doesnt exist.
+  echo '#!/bin/sh\nexit 101' > /usr/sbin/policy-rc.d
+  chmod +x /usr/sbin/policy-rc.d
+
 %runscript
   #!/bin/bash
   echo "Nominatim placeholder container ready."

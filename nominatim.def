@@ -152,6 +152,102 @@ From: ubuntu:24.04
   echo "Configuring Nominatim using config.sh..."
   /app/config.sh
 
+  # add database DSN to .env
+  echo "NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5432;user=pguser;dbname=nominatim" >> /nominatim/.env
+
+  echo "Configuration before import:"
+  cat /nominatim/.env
+
+  # init Nominatim: create database and tables:
+  echo "Initializing Nominatim import..."
+
+  # TODO: threads should be changed
+  su pguser -c "cd /nominatim && nominatim import --osm-file /app/data/iowa-latest.osm.pbf --project-dir /nominatim --threads 4"
+
+  # Grant permissions to users after database and tables are created
+  echo "Granting database permissions..."
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO \"www-data\";'" || echo "Grant connect to www-data failed"
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO nominatim;'" || echo "Grant connect to nominatim failed"
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO \"www-data\";'" || echo "Grant usage to www-data failed"
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO nominatim;'" || echo "Grant usage to nominatim failed"
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"www-data\";'" || echo "Grant select to www-data failed"
+  su pguser -c "psql -h localhost -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO nominatim;'" || echo "Grant select to nominatim failed"
+
+  # Import metadata
+  echo "Trying to import Nominatim project metadata..."
+
+  if [ -f /app/data/us_postcodes.csv.gz ]; then
+      echo "Importing US postcodes..."
+      su pguser -c "cd /nominatim && nominatim refresh --postcodes --project-dir /nominatim" 2>/dev/null || echo "Postcodes import failed, continuing..."
+  fi
+
+  if [ -f /app/data/wikimedia-importance.csv.gz ]; then
+      echo "Importing Wikimedia importance data..."
+      cp /app/data/wikimedia-importance.csv.gz /nominatim/
+      chown pguser:pguser /nominatim/wikimedia-importance.csv.gz
+      su pguser -c "cd /nominatim && nominatim refresh --importance --project-dir /nominatim" || echo "Importance import failed, continuing..."
+  fi
+
+  if [ -f /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz ]; then
+    echo "Importing Tiger-Line Files"
+    cp /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz /nominatim/
+    chown pguser:pguser /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz
+    su pguser -c "mkdir -p /nominatim/tiger_data && tar -xzf /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz -C /nominatim/tiger_data"
+    su pguser -c "cd /nominatim && nominatim add-data --tiger-data /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz"
+  fi
+
+  echo "Final indexing..."
+  su pguser -c "cd /nominatim && nominatim index --project-dir /nominatim"
+
+  echo "Converting database to SQLite..."
+  su pguser -c "cd /nominatim && nominatim convert -o /nominatim/nominatim.sqlite"
+
+  # Verify SQLite database
+  if [ -f /nominatim/nominatim.sqlite ]; then
+      echo "SQLite database created successfully: $(du -h /nominatim/nominatim.sqlite)"
+      ls -la /nominatim/nominatim.sqlite
+  else
+      echo "ERROR: SQLite database was not created!"
+      exit 1
+  fi
+
+  # update .env to use SQLite (the scuffed way)
+  # TODO: update this to not be hardcoded
+
+  echo "updating Nominatim to use SQLite (experimental)..."
+  cp /nominatim/.env /nominatim/.env.postgres
+    cat > /nominatim/.env << EOF
+NOMINATIM_DATABASE_DSN=sqlite:dbname=/nominatim/nominatim.sqlite
+NOMINATIM_TOKENIZER=icu
+NOMINATIM_IMPORT_STYLE=full
+NOMINATIM_REPLICATION_UPDATE_INTERVAL=86400
+NOMINATIM_REPLICATION_RECHECK_INTERVAL=900
+NOMINATIM_FLATNODE_FILE=
+EOF
+
+  echo "Final Nominatim .env:"
+  cat /nominatim/.env
+
+  # sotp postgresql after conversion:
+  echo "Stopping PostgreSQL..."
+  su pguser -c "/user/lib/postgresql/16/bin/pg_ctl -D $PGDATA stop"
+
+  # Clean up:
+  echo "Cleaning up build files..."
+
+  rm -rf /app/postgresql /app/data
+  apt-get -y remove --purge --auto-remove build-essential postgresql-postgis postgresql-postgis-scripts
+  apt-get clean
+  find /tmp -maxdepth 1 -type f -delete 2>/dev/null || true
+  find /var/tmp -maxdepth 1 -type f -delete 2>/dev/null || true
+  pip cache purge 2>/dev/null || true
+
+  # Make SQLite database accessible
+  chmod 755 /nominatim
+  chmod 644 /nominatim/nominatim.sqlite
+
+  # Make scripts executable
+  chmod +x /app/config.sh
 
 %runscript
   #!/bin/bash

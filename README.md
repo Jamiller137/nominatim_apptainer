@@ -91,7 +91,7 @@ Nominatim you should:
 
     Example: 
     ```bash
-# Downloading California Data
+    # Downloading California Data
     wget https://download.geofabrik.de/north-america/us/california-latest.osm.pbf \
       -O nominatim_project/california-latest.osm.pbf
     ```

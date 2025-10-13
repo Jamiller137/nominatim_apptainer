@@ -89,26 +89,26 @@ Nominatim you should:
 
 1. Replace `iowa-latest.osm.pbf` in the `nominatim_project/` directory.
 
-Example: 
-```bash
+    Example: 
+    ```bash
 # Downloading California Data
-wget https://download.geofabrik.de/north-america/us/california-latest.osm.pbf \
-  -O nominatim_project/california-latest.osm.pbf
-```
+    wget https://download.geofabrik.de/north-america/us/california-latest.osm.pbf \
+      -O nominatim_project/california-latest.osm.pbf
+    ```
 
 2. Update `nominatim.def`:
 
-```plaintext
-nominatim_project/california-latest.osm.pbf /app/data/california-latest.osm.pbf
-```
-And update PBF_PATH in %post.
+    ```plaintext
+    nominatim_project/california-latest.osm.pbf /app/data/california-latest.osm.pbf
+    ```
+    And update PBF_PATH in %post.
 
 3. Adjust Resources:
 
-If necessary you should modify the thread count inside the %post section
-```plaintext
-nominatim import --osm-file /app/data/iowa-latest.osm.pbf --threads [new_thread_count]
-```
+    If necessary you should modify the thread count inside the %post section
+    ```plaintext
+    nominatim import --osm-file /app/data/iowa-latest.osm.pbf --threads [new_thread_count]
+    ```
 
 
 

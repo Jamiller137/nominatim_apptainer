@@ -281,4 +281,134 @@ EOF
 
 
 %help
-  A base for the container. Defines Ubuntu 24.04 as the base image. With postgres supporty.
+  =============================================================================
+  Nominatim Geocoding Container - Iowa OSM Data
+  =============================================================================
+
+  VERSION: Nominatim 5.1.0
+  BASE: Ubuntu 24.04
+  DATABASE: SQLite (converted from PostgreSQL)
+  COVERAGE: Iowa state by default (OpenStreetMap data)
+
+  DESCRIPTION:
+    Self-contained geocoding container with pre-built Nominatim database for
+    Iowa. Uses SQLite backend for portability and ease of use. Includes TIGER
+    address data, US postcodes, and Wikimedia importance rankings.
+
+  DATABASE LOCATION:
+    /nominatim/nominatim.sqlite
+
+  INSTALLED PACKAGES:
+    - nominatim-db==5.1.0
+    - nominatim-api==5.1.0
+    - Python 3.12
+    - SQLite3 with SpatiaLite
+    - GDAL/OGR tools
+    - osmium
+
+  =============================================================================
+  USAGE EXAMPLES
+  =============================================================================
+
+  Run a Python script:
+    apptainer run nominatim.sif python3 geocode.py "Des Moines, Iowa"
+
+  Interactive Python session:
+    apptainer run nominatim.sif python3
+
+  Interactive shell:
+    apptainer run nominatim.sif bash
+
+  Execute custom commands:
+    apptainer run nominatim.sif <command>
+
+  =============================================================================
+  PYTHON API USAGE
+  =============================================================================
+
+  Example:
+
+    from nominatim_api import NominatimAPI
+    import os
+
+    os.chdir('/nominatim')
+    api = NominatimAPI(project_dir='/nominatim')
+
+    results = api.search('Cedar Rapids, Iowa', limit=1)
+    if results:
+        print(f"Lat: {results[0].centroid.lat}")
+        print(f"Lon: {results[0].centroid.lon}")
+
+    api.close()
+
+  =============================================================================
+  BIND MOUNTING DATA
+  =============================================================================
+
+  To access external files (CSV, scripts, etc.):
+
+    apptainer run --bind /path/on/host:/data nominatim.sif \
+      python3 /data/script.py
+
+  Example with CSV geocoding:
+    apptainer run --bind $PWD:/data nominatim.sif \
+      python3 /data/geocode_csv.py /data/input.csv /data/output.csv address
+
+  =============================================================================
+  METADATA INCLUDED
+  =============================================================================
+
+  - US Postcodes: Enhanced ZIP code coverage
+  - TIGER Data: US Census address-level data
+  - Wikimedia Importance: Search result ranking
+  - Secondary Importance: Additional ranking data
+
+  =============================================================================
+  TECHNICAL DETAILS
+  =============================================================================
+
+  Build Process:
+    1. PostgreSQL 16 initialized during build
+    2. OSM data imported with full indexing
+    3. Metadata and TIGER data added
+    4. Database converted to SQLite format
+    5. PostgreSQL removed to reduce image size
+
+  Configuration:
+    - Tokenizer: ICU (International Components for Unicode)
+    - Import Style: Full (all OSM features)
+    - Database DSN: sqlite:dbname=/nominatim/nominatim.sqlite
+
+  Notes:
+    - Converted to SQLite for read-only queries and portability.
+    - No network required after the build.
+    - For geocoding in airlocked systems.
+
+  =============================================================================
+  TROUBLESHOOTING
+  =============================================================================
+
+  Database not found:
+    Ensure you are running from container context. The database is internal
+    at /nominatim/nominatim.sqlite
+
+  Permission errors:
+    Database is world-readable (644). Check bind mount permissions if
+    accessing external files.
+
+  No results found:
+    Database only contains data from the osm.pbf file used to build. 
+    By default this means that queries outside Iowa will definitely return
+    no results.
+
+  =============================================================================
+  SUPPORT & DOCUMENTATION
+  =============================================================================
+
+  Nominatim Documentation: https://nominatim.org/release-docs/latest/
+  Nominatim API Docs: https://nominatim.org/release-docs/latest/api/Search/
+  OpenStreetMap: https://www.openstreetmap.org/
+
+  Container built with Apptainer/Singularity
+  =============================================================================
+

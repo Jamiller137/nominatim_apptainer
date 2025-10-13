@@ -242,6 +242,9 @@ EOF
   find /tmp -maxdepth 1 -type f -delete 2>/dev/null || true
   find /var/tmp -maxdepth 1 -type f -delete 2>/dev/null || true
   pip cache purge 2>/dev/null || true
+  rm /nominatim/t8ger-nominatim-preprocessed-latest.csv.tar.gz
+  rm wikimedia-importance.csv.gz
+
 
   # Make SQLite database accessible
   chmod 755 /nominatim

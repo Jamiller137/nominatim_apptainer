@@ -1,0 +1,168 @@
+Bootstrap: localimage
+From: builder.sif
+
+%arguments
+  NOMINATIM_VERSION=5.1.0
+
+%files
+  conf.d/postgresql.conf /app/conf/postgresql.conf
+  conf.d/pg_hba.conf /app/conf/pg_hba.conf
+  conf.d/postgres-import.conf /etc/postgresql/16/main/conf.d/postgres-import.conf.disabled
+  conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
+  conf.d/env /nominatim/.env
+  nominatim_project/config.sh /app/config.sh
+  nominatim_project/iowa-latest.osm.pbf /app/data/iowa-latest.osm.pbf
+  nominatim_project/secondary_importance.sql.gz /app/data/secondary_importance.sql.gz
+  nominatim_project/us_postcodes.csv.gz /app/data/us_postcodes.csv.gz
+  nominatim_project/wikimedia-importance.csv.gz /app/data/wikimedia-importance.csv.gz
+  nominatim_project/tiger-nominatim-preprocessed-latest.csv.tar.gz /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz
+
+%environment
+  export NOMINATIM_VERSION="${NOMINATIM_VERSION:-5.1.0}"
+  export PROJECT_DIR=/nominatim
+  export USER_AGENT=mediagis/nominatim-docker:${NOMINATIM_VERSION} # from docker version
+
+  export LANG=C.UTF-8
+  export DEBIAN_FRONTEND=noninteractive
+
+%post
+  set -eux                                               # strict shell settings for debugging
+  echo "=== Stage 3: Building Nominatim database ==="
+  NOMINATIM_VERSION="${NOMINATIM_VERSION:-5.1.0}"        # set version again
+  export NOMINATIM_VERSION=${NOMINATIM_VERSION}
+
+  export PGDATA=/app/postgresql/data                     # PostgreSQL data directory
+  export POSTGRES_RUN_DIR=/app/postgresql/run            # Socket/run directory for PostgreSQL
+  export PBF_PATH=/app/data/iowa-latest.osm.pbf          # OSM data location
+  export IMPORT_STYLE=full
+  export NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE}
+  export NOMINATIM_TOKENIZER=icu
+  export NOMINATIM_FLATNODE_FILE=                        # disable flatnode usage
+
+  mkdir -p /app /nominatim "$PGDATA" "$POSTGRES_RUN_DIR" /app/postgresql/log # setup directories
+  useradd -m -s /bin/bash pguser                        # PostgreSQL user for operations
+  chown -R pguser:pguser /app /nominatim                # pguser owns working dirs
+  chmod -R 755 /app /nominatim                          # permissions
+
+  echo "Initializing PostgreSQL..."
+  su pguser -c "/usr/lib/postgresql/16/bin/initdb -D $PGDATA --auth=trust" # initialize
+  cp /app/conf/postgresql.conf "$PGDATA/postgresql.conf"                   # apply postgres configs
+  cp /app/conf/pg_hba.conf "$PGDATA/pg_hba.conf"
+  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA -o '-k $POSTGRES_RUN_DIR' -l /app/postgresql/log/build.log start" # PostgreSQL with local socket
+
+  for i in $(seq 1 30); do                                # Wait for PostgreSQL
+    if su pguser -c "/usr/lib/postgresql/16/bin/pg_isready -h $POSTGRES_RUN_DIR -p 5432"; then
+      echo "PostgreSQL is ready!"
+      break
+    fi
+    echo "Waiting for PostgreSQL... ($i/30)"
+    sleep 2
+  done
+
+  echo "Setting up database users..."
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --superuser root" || true
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --superuser pguser" || true
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --no-createdb --no-createrole --no-superuser www-data" || true
+  su pguser -c "createuser -h $POSTGRES_RUN_DIR -p 5432 --no-createdb --no-createrole --no-superuser nominatim" || true
+
+  echo "Running configuration script..."
+  mkdir -p /nominatim/settings
+  touch /nominatim/.env
+
+  export PROJECT_DIR=/nominatim
+  export PBF_PATH=/app/data/iowa-latest.osm.pbf
+
+  PROJECT_DIR=${PROJECT_DIR} \
+  PBF_PATH=${PBF_PATH} \
+  /bin/bash /app/config.sh || echo "config.sh: warnings ignored" # setup script, tolerate warnings
+
+  echo "Adding database DSN and import variables to .env..."
+  cat <<EOF >> /nominatim/.env                            # runtime settings for later use
+NOMINATIM_DATABASE_DSN=pgsql:host=$POSTGRES_RUN_DIR;port=5432;user=pguser;dbname=nominatim
+NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE}
+NOMINATIM_TOKENIZER=${NOMINATIM_TOKENIZER}
+NOMINATIM_FLATNODE_FILE=${NOMINATIM_FLATNODE_FILE}
+NOMINATIM_REPLICATION_URL=
+NOMINATIM_REPLICATION_UPDATE_INTERVAL=86400
+NOMINATIM_REPLICATION_RECHECK_INTERVAL=900
+EOF
+
+  echo "Configuration for Nominatim:"
+  cat /nominatim/.env                                     # display the nominatim config
+
+  echo "Importing OSM data..."
+  su pguser -c "cd /nominatim && env NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} NOMINATIM_TOKENIZER=${NOMINATIM_TOKENIZER} nominatim import --osm-file ${PBF_PATH} --project-dir /nominatim --threads 4" # Run main import.
+
+  echo "Granting permissions..."
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT CONNECT ON DATABASE nominatim TO \"www-data\";'"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT USAGE ON SCHEMA public TO \"www-data\";'"
+  su pguser -c "psql -h $POSTGRES_RUN_DIR -p 5432 -d nominatim -c 'GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"www-data\";'"
+
+  echo "Importing metadata..."
+  if [ -f /app/data/us_postcodes.csv.gz ]; then
+    su pguser -c "cd /nominatim && NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} nominatim refresh --postcodes --project-dir /nominatim" || true # postcode refresh
+  fi
+  if [ -f /app/data/wikimedia-importance.csv.gz ]; then
+    cp /app/data/wikimedia-importance.csv.gz /nominatim/
+    chown pguser:pguser /nominatim/wikimedia-importance.csv.gz
+    su pguser -c "cd /nominatim && NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} nominatim refresh --importance --project-dir /nominatim" || true # load importance
+  fi
+  if [ -f /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz ]; then
+    cp /app/data/tiger-nominatim-preprocessed-latest.csv.tar.gz /nominatim/
+    chown pguser:pguser /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz
+    su pguser -c "mkdir -p /nominatim/tiger_data && tar -xzf /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz -C /nominatim/tiger_data" # extract TIGER data
+    su pguser -c "cd /nominatim && NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} nominatim add-data --tiger-data /nominatim/tiger-nominatim-preprocessed-latest.csv.tar.gz" # load TIGER dataset
+  fi
+
+  echo "Final indexing..."
+  su pguser -c "cd /nominatim && NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} nominatim index --project-dir /nominatim"
+
+  echo "Converting to SQLite..."
+  su pguser -c "cd /nominatim && NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE} nominatim convert -o /nominatim/nominatim.sqlite"
+
+  echo "Verifying SQLite database..."
+  if [ -f /nominatim/nominatim.sqlite ]; then
+    du -h /nominatim/nominatim.sqlite                     # print sqlite db size
+  else
+    echo 'ERROR: SQLite database missing!'
+    exit 1
+  fi
+
+  echo "Switching .env to SQLite mode..."
+  cp /nominatim/.env /nominatim/.env.postgres
+  cat <<EOF > /nominatim/.env                             # SQLite runtime configuration
+NOMINATIM_DATABASE_DSN=sqlite:dbname=/nominatim/nominatim.sqlite
+NOMINATIM_TOKENIZER=${NOMINATIM_TOKENIZER}
+NOMINATIM_IMPORT_STYLE=${IMPORT_STYLE}
+NOMINATIM_REPLICATION_UPDATE_INTERVAL=86400
+NOMINATIM_REPLICATION_RECHECK_INTERVAL=900
+NOMINATIM_FLATNODE_FILE=
+EOF
+
+  echo "Stopping PostgreSQL..."
+  su pguser -c "/usr/lib/postgresql/16/bin/pg_ctl -D $PGDATA stop"
+
+  echo "Cleaning up build artifacts..."
+  rm -rf /app/postgresql /app/data
+  find /tmp -maxdepth 1 -type f -delete 2>/dev/null || true
+  find /var/tmp -maxdepth 1 -type f -delete 2>/dev/null || true
+  echo "Nominatim build finished successfully."
+
+%runscript
+  echo "Nominatim ready. SQLite DB at /nominatim/nominatim.sqlite"
+  if [ "$1" = "bash" ]; then
+    /bin/bash                                             # drop into shell if requested.
+  elif [ "$#" -gt 0 ]; then
+    exec "$@"                                             # execute given commands
+  else
+    /bin/bash                                             # else, open shell
+  fi
+
+%help
+  =============================================================================
+  Stage 3: application.def (Shell-variable configuration)
+  =============================================================================
+  Performs an offline build of nominatim.
+  Produces nominatim.sif with /nominatim/nominatim.sqlite.
+  =============================================================================
+

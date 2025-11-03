@@ -1,0 +1,80 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%arguments
+  NOMINATIM_VERSION=5.1.0  # Default Nominatim version: latest as of Nov. is 5.2.0
+
+%environment
+  export DEBIAN_FRONTEND=noninteractive  # Prevent interactive prompts during package installs
+  export LANG=C.UTF-8                    # Ensure locale
+
+%post
+export ICU_VERSION=74                    # Required to buidl libicu and icudevtools (not latest ver.)
+
+  echo "=== Stage 1: Preparing dependency cache ==="
+  apt-get -y update
+  apt-get -y install --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      icu-devtools \
+      libicu-dev \
+      pkg-config \
+      python3-pip \
+      curl \
+      wget \
+      apt-transport-https
+
+  mkdir -p /opt/apt_packages /opt/python_wheels /opt/data
+                                          # Create cache directories
+
+  echo "=== Downloading APT dependencies to cache ==="
+  apt-get -y update
+  apt-get -y install --download-only \
+      osm2pgsql \
+      libicu-dev \
+      python3-dev \
+      python3-pandas \
+      python3-icu \
+      pkg-config \
+      postgresql-postgis \
+      postgresql-postgis-scripts \
+      sqlite3 \
+      libsqlite3-mod-spatialite \
+      spatialite-bin \
+      gdal-bin \
+      python3-gdal \
+      sudo \
+      tree \
+      vim \
+      unzip
+
+  find /var/cache/apt/archives -name '*.deb' -exec cp {} /opt/apt_packages/ \;
+                                          # copy all downloaded .deb files into cache directory.
+  echo "APT packages cached in /opt/apt_packages"
+
+  NOMINATIM_VERSION="${NOMINATIM_VERSION:-5.1.0}"
+  export NOMINATIM_VERSION               # make version variable available
+
+  echo "=== Downloading Python wheels for offline pip installs ==="
+  python3 -m pip download -d /opt/python_wheels \
+        "nominatim-db==${NOMINATIM_VERSION}" \
+        "nominatim-api==${NOMINATIM_VERSION}" \
+        osmium \
+        'psycopg[binary]' \
+        aiosqlite
+  echo "Python wheels cached in /opt/python_wheels ..."
+
+%labels
+  Maintainer="Jacob Miller"
+  Stage="resources"
+  Description="Caches APT and Python dependencies for offline builds."
+
+%help
+  =============================================================================
+  Stage 1: resources.def
+  =============================================================================
+  This container downloads and stores dependencies required for Nominatim.
+  Output: resources.sif (contains /opt/apt_packages and /opt/python_wheels)
+  Used as a dependency base for offline container builds on Argon.
+  =============================================================================
+

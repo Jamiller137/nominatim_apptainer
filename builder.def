@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: resources.sif
+
+%arguments
+  NOMINATIM_VERSION=5.1.0
+
+%environment
+  export DEBIAN_FRONTEND=noninteractive
+  export LANG=C.UTF-8
+
+%post
+  echo "=== Stage 2: Installing cached dependencies (Offline) ==="
+
+  # install cached Debian packages 
+  # if dependencies are missing (which they shouldn't), fix them using the internet
+  # this might require builder.sif to be prebuilt as well which is not a big deal
+  dpkg -i /opt/apt_packages/*.deb || apt-get -f install -y
+  echo "APT dependencies installed offline, otherwise try to download them."
+
+  # ppp the Nominatim version inside the build environment
+  export NOMINATIM_VERSION="${NOMINATIM_VERSION:-5.1.0}"
+  # allow pip to install packages that would conflict with system packages
+  # this SHOULD be fine and 'solves' errors
+  export PIP_BREAK_SYSTEM_PACKAGES=1
+
+  # install Python requirements from the pre-downloaded wheel cache
+  python3 -m pip install --no-index --find-links=/opt/python_wheels \
+      nominatim-db==${NOMINATIM_VERSION} \
+      nominatim-api==${NOMINATIM_VERSION} \
+      osmium \
+      'psycopg[binary]' \
+      aiosqlite
+
+  echo "Python packages installed from wheel cache."
+
+  # directories expected later
+  mkdir -p /app /nominatim /app/data /app/conf
+  # mark consumed caches for later validation
+  touch /opt/apt_packages/.offline_installed /opt/python_wheels/.offline_ready
+
+%labels
+  Maintainer="Jacob Miller"
+  Stage="builder"
+  Description="Installs cached dependencies from resources.def... to be used by application.def"
+
+%help
+  =============================================================================
+  Stage 2: builder.def
+  =============================================================================
+  Installs all dependencies from the cached files created in resources.def
+  Runs entirely offline.
+  Output: builder.sif
+  =============================================================================
+

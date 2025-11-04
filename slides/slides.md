@@ -167,8 +167,8 @@ Nominatim requires the following users:
 
 ```bash
 createuser --superuser pguser          # Owns PostgreSQL database
-createuser --no-superuser nominatim    # Read-only
-createuser --no-superuser www-data     # Web accessor
+createuser --no-superuser nominatim    # Read-only queries
+createuser --no-superuser www-data     # Web-server read-only user (vestigial)
 ```
 
 ---
@@ -194,12 +194,13 @@ This along with postgresql conf will probably need to be optimized.
 - US Postcodes (ZIP code geocoding)
 - Wikimedia Importance (improves result ranking)
 - Tiger-Line Data (address interpolation)
+    - Most expensive part for state/regional builds
 
 ---
 
 # Phase 5: SQLite Convert
 
-**Experimental**
+**Experimental!!**
 ```bash
 nominatim convert -o /nominatim/nominatim.sqlite
 ```
@@ -217,14 +218,16 @@ Mainly done to reduce the size of the resulting container to just have SQLite da
 
 # Offline Container Build Strategy:
 
-## Problem: 
+## Problems: 
 
-Building containers offline (Argon) requires all dependencies be
-pre-downloaded and no elevated priviledges.
-    - APT Packages
-    - Python wheels
-    - Base Docker images
-
+1. Building containers offline (Argon) requires all dependencies be
+pre-downloaded
+    - Base Ubuntu Image, APT Packages, Python wheels (for geocoding scripts)
+2. Argon automatically makes 'mounted' directories a symlink
+    - To fix this for our build we need to `export HOME=$(realpath "$HOME")`
+3. Caching: Argon typically has to compile code or download it itself.
+4. User switching won't work
+    - `su`, `runuser`, `chown`, etc. are faked through namespace mapping but it seems that PostgreSQL in the container can see through this.
 ---
 
 ## Solution: Two Stage Build
@@ -272,37 +275,35 @@ which will be used as a cache when building the actual container.
 
 ---
 
-## `builder.def` Demo
-
-```plaintext
-Bootstrap: docker
-From: ubuntu:24.04
-
-%files
-  offline_deps/apt_packages/*.deb /opt/apt_packages/
-  offline_deps/python_wheels/*.whl /opt/python_wheels/
-
-%post
-  # Install all dependencies
-  dpkg -i /opt/apt_packages/*.deb
-  pip install --no-index --find-links=/opt/python_wheels \
-    nominatim-db nominatim-api osmium psycopg aiosqlite
-```
+## Problems:
+User switching was still breaking inside of `builder`.
 
 ---
 
-## `application.def` Demo
+
+## Solution: Two-Stage Process
+The user switching issue was resolved by introducing **nominatim-base.def**
+
 ```plaintext
-Bootstrap: localimage    # Uses local .sif file
-From: builder.sif
-
-%files
-  nominatim_project/iowa-latest.osm.pbf /app/data/
-
-%post
-  # All dependencies already installed
-  nominatim import --osm-file /app/data/iowa-latest.osm.pbf
-  nominatim convert -o /nominatim/nominatim.sqlite
+┌─────────────────────────────────────────────────────────────┐
+│ nominatim-base.def                                          │
+├─────────────────────────────────────────────────────────────┤
+│ Bootstrap: docker                                           │
+│ From: ubuntu:24.04                                          │
+│                                                             │
+│ • Installs all Nominatim tools                              │
+│ • Installs PostgreSQL, PostGIS, osm2pgsql                   │
+│ • Installs Python packages (nominatim-db, nominatim-api)    │
+│ • Creates pguser                                            │
+│ • NO DATABASE PRE-BUILT                                     │
+│                                                             │
+│ Output: nominatim-base.sif (tools only)                     │
+└─────────────────────────────────────────────────────────────┘
 ```
-Will be very similar to nominatim.def but instead pulls dependencies from builder.def.
+- Works!
 
+---
+
+# Github Link
+
+https://github.com/Jamiller137/nominatim_apptainer

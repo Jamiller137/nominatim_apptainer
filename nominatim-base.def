@@ -1,0 +1,108 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%arguments
+  NOMINATIM_VERSION=5.1.0
+
+%environment
+  export DEBIAN_FRONTEND=noninteractive
+  export LANG=C.UTF-8
+  export PROJECT_DIR=/nominatim
+  export USER_AGENT=mediagis/nominatim-docker:{{ NOMINATIM_VERSION }}
+
+%post
+  export NOMINATIM_VERSION={{ NOMINATIM_VERSION }}
+  
+  # create directories first
+  mkdir -p /app/scripts /app/conf /app/data /nominatim /app/postgresql
+  cd /app
+
+  # apt caching
+  rm -f /etc/apt/apt.conf.d/docker-clean
+  echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
+  # Prevent daemon starts
+  echo '#!/bin/sh\nexit 101' > /usr/sbin/policy-rc.d
+  chmod +x /usr/sbin/policy-rc.d
+
+  # Update/Install packages
+  apt-get -y update -qq
+  apt-get -y install locales
+  locale-gen en_US.UTF-8
+  update-locale LANG=en_US.UTF-8
+
+  apt-get -y install \
+    -o APT::Install-Recommends="false" \
+    -o APT::Install-Suggests="false" \
+    build-essential \
+    osm2pgsql \
+    pkg-config \
+    libicu-dev \
+    python3-dev \
+    python3-pandas \
+    python3-pip \
+    python3-icu \
+    postgresql-postgis \
+    postgresql-postgis-scripts \
+    sqlite3 \
+    libsqlite3-mod-spatialite \
+    spatialite-bin \
+    curl \
+    tree \
+    vim \
+    wget \
+    unzip \
+    gdal-bin \
+    python3-gdal \
+    sudo
+
+  # Install Python packages
+  pip install --break-system-packages \
+    nominatim-db==5.1.0 \
+    nominatim-api==5.1.0 \
+    osmium \
+    'psycopg[binary]' \
+    aiosqlite
+
+  # create pguser (postgres user should already exist from postgresql pkg)
+  useradd -m -s /bin/bash pguser
+  echo "pguser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+  # create directories that Argon expects
+  mkdir -p /Users
+
+  # clean up
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%runscript
+  #!/bin/bash
+  if [ "$1" = "import" ]; then
+    exec /app/scripts/import_database.sh "${@:2}"
+  elif [ "$1" = "bash" ]; then
+    /bin/bash
+  elif [ "$1" = "python" ] || [ "$1" = "python3" ]; then
+    shift
+    python3 "$@"
+  elif [ "$#" -gt 0 ]; then
+    exec "$@"
+  else
+    echo "Nominatim tools container ready"
+    echo "Usage:"
+    echo "  apptainer run container.sif import [options]  # Import database"
+    echo "  apptainer run container.sif bash              # Interactive shell"
+    echo "  apptainer run container.sif python3 script.py # Run Python"
+    /bin/bash
+  fi
+
+%help
+  =============================================================================
+  Nominatim Base Container - Tools Only
+  =============================================================================
+  
+  This container includes all Nominatim tools but NO pre-built database.
+  Use the import process to build the database after container creation.
+  
+  See import_database.sh for database building instructions.
+  =============================================================================
+

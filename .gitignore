@@ -6,3 +6,5 @@ nominatim_project/wikimedia-importance.csv.gz
 nominatim_project/secondary_importance.sql.gz
 
 *.sif
+.direnv
+.envrc

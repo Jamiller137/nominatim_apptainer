@@ -42,8 +42,7 @@ sanitizers:
 token-analysis:
     - analyzer: generic
       variants:
-      #  - !include /app/variants-us.yaml
-      #  to be included
+        - !include /app/variants-us.yaml
 
       mutations:
         # 'and' / '&' equivalence in street names

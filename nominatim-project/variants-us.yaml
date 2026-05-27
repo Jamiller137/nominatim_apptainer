@@ -1,0 +1,350 @@
+# Adapted from OSM Name Finder Abbreviations + USPS Pub. 28
+# Nominatim/settings/icu-rules/variants-en.yaml
+# https://wiki.openstreetmap.org/wiki/Name_finder:Abbreviations#English
+# https://pe.usps.com/text/pub28/28apc_002.htm
+
+- lang: en
+  words:
+    # ---- Streets / ways ----
+    - alley -> aly
+    - annex -> anx
+    - arcade -> arc
+    - avenue -> av,ave
+    - bayou -> byu
+    - beach -> bch
+    - bend -> bnd
+    - boulevard -> blvd,boul,bvd
+    - branch -> br
+    - bridge$ -> bdge,br,brdg,bri,brg
+    - brook -> brk
+    - burg -> bg
+    - bypass -> byp
+    - camp -> cp
+    - canyon -> cyn
+    - cape -> cpe
+    - causeway -> cswy
+    - center -> ctr
+    - centre -> ctr
+    - circle -> cir
+    - cliffs -> clfs
+    - club -> clb
+    - common -> cmn
+    - corner -> cor
+    - corners -> cors
+    - course -> crse
+    - court -> crt,ct
+    - courts -> cts
+    - cove -> cv
+    - creek -> ck,cr,crk
+    - crescent -> cres
+    - crest -> crst
+    - crossing -> xing
+    - crossroad -> xrd
+    - dale -> dl
+    - dam -> dm
+    - divide -> dv
+    - drive -> dr,drv,dv
+    - "drive-in => drive-in"
+    - estate -> est
+    - estates -> ests
+    - expressway -> exp,expy,expwy,xway
+    - extension -> ext
+    - falls -> fls
+    - ferry -> fry
+    - field -> fld
+    - fields -> flds
+    - flat -> flt
+    - flats -> flts
+    - ford -> frd
+    - forest -> frst
+    - forge -> frg
+    - fork -> frk
+    - forks -> frks
+    - fort -> ft
+    - freeway -> frwy,fwy
+    - garden -> gdn
+    - gardens -> gdns
+    - gateway -> gtwy
+    - glade$ -> gld
+    - glen -> gln
+    - green -> grn
+    - grove -> grv
+    - harbor -> hbr
+    - harbour -> hbr
+    - haven -> hvn
+    - heights -> hts
+    - highway -> hwy
+    - hill -> hl
+    - hills -> hls
+    - hollow -> holw
+    - inlet -> inlt
+    - island -> i,is
+    - islands -> iss
+    - junction -> jct
+    - key -> ky
+    - knoll -> knl
+    - knolls -> knls
+    - lake -> lk
+    - lakes -> lks
+    - landing -> lndg
+    - lane -> la,ln
+    - light -> lgt
+    - loaf -> lf
+    - lock -> lck
+    - lodge -> ldg
+    - loop -> loop
+    - mall -> mall
+    - manor -> mnr
+    - meadow -> mdw
+    - meadows -> mdws
+    - mews -> mews
+    - mill -> ml
+    - mills -> mls
+    - ^mount -> mt
+    - mountain$ -> mtn
+    - mountains$ -> mtns
+    - neck -> nck
+    - orchard -> orch
+    - oval -> oval
+    - park -> pk
+    - parks -> pks
+    - parkway -> pkwy,pky,pwy
+    - pass -> pass
+    - passage -> psge
+    - path -> path
+    - pike -> pike
+    - pine -> pne
+    - pines -> pnes
+    - place -> pl
+    - plain -> pln
+    - plains -> plns
+    - plaza -> plz
+    - point -> pt
+    - points -> pts
+    - port -> prt
+    - ports -> prts
+    - prairie -> pr
+    - radial -> radl
+    - ranch -> rnch
+    - rapid -> rpd
+    - rapids -> rpds
+    - rest -> rst
+    - ridge -> rdg
+    - ridges -> rdgs
+    - ^river -> r,riv,rvr
+    - river$ -> r,riv,rvr
+    - road -> rd
+    - roads -> rds
+    - route -> rte
+    - row -> row
+    - rue -> rue
+    - run -> run
+    - shoal -> shl
+    - shoals -> shls
+    - shore -> shr
+    - shores -> shrs
+    - skyway -> skwy
+    - spring -> spg
+    - springs -> spgs
+    - spur -> spur
+    - spurs -> spur
+    - square -> sq
+    - squares -> sqs
+    - station -> sta
+    - stravenue -> stra
+    - stream -> strm
+    - street -> st
+    - streets -> sts
+    - summit -> smt
+    - terrace -> tce,ter,terr
+    - throughway -> trwy
+    - trace -> trce
+    - track -> trak
+    - trafficway -> trfy
+    - trail -> trl
+    - trailer -> trlr
+    - tunnel -> tunl
+    - turnpike -> tpk,tpke
+    - underpass -> upas
+    - union -> un
+    - unions -> uns
+    - valley -> vly,vy
+    - valleys -> vlys
+    - viaduct -> via
+    - view -> vw
+    - views -> vws
+    - village -> vlg
+    - villages -> vlgs
+    - ville -> vl
+    - vista -> vis
+    - walk -> walk
+    - walks -> walks
+    - wall -> wall
+    - way -> wy
+    - ways -> wys
+    - well -> wl
+    - wells -> wls
+
+    # ---- directions (careful with words like "Northside") ----
+    - ^north -> n
+    - ^south -> s
+    - ^east -> e
+    - ^west -> w
+    - ^northeast -> ne
+    - ^northwest -> nw
+    - ^southeast -> se
+    - ^southwest -> sw
+    - north$ -> n,sth
+    - south$ -> s,sth
+    - east$ -> e
+    - west$ -> w
+    - northeast$ -> ne
+    - northwest$ -> nw
+    - southeast$ -> se
+    - southwest$ -> sw
+
+    # ---- addr_2 ----
+    - apartment -> apt
+    - apartments -> apts
+    - basement -> bsmt
+    - building -> bldg
+    - department -> dept
+    - floor -> fl
+    - hangar -> hngr
+    - lobby -> lbby
+    - lower -> lowr
+    - office -> ofc
+    - penthouse -> ph
+    - pier -> pier
+    - room -> rm
+    - side -> side
+    - slip -> slip
+    - space -> spc
+    - stop -> stop
+    - suite -> ste
+    - trailer -> trlr
+    - unit -> unit
+    - upper -> uppr
+
+    # ---- honorific shortcuts ----
+    - saint -> st
+    - sainte -> ste
+    - saints -> ss
+    - fort -> ft
+    - mount -> mt
+    - mountain -> mtn
+    - township -> twp
+    - county -> co
+    - junior -> jr
+    - senior -> sr
+    - george -> geo
+    - william -> wm
+
+    # ---- Institutions ----
+    - hospital -> hosp
+    - university -> uni,univ
+    - high school -> hs
+    - middle school -> ms
+    - elementary school -> es
+    - national park -> np
+    - national forest -> nf
+    - national monument -> nm
+    - air force base -> afb
+    - army base -> ab
+
+    # ---- US road network ----
+    - interstate -> i
+    - "u s highway -> us hwy,us"
+    - "u s route -> us rt,us"
+    - "state route -> sr,rt"
+    - "state highway -> sh,shwy,hwy"
+    - "county road -> cr"
+    - "farm to market -> fm"
+    - "ranch to market -> rm"
+
+    # ---- Ordinals (1st/2nd/3rd...) ----
+    - 1st -> 1
+    - 2nd -> 2
+    - 3rd -> 3
+    - 4th -> 4
+    - 5th -> 5
+    - 6th -> 6
+    - 7th -> 7
+    - 8th -> 8
+    - 9th -> 9
+    - 0th -> 0
+
+    # ---- US States (USPS Pub. 28 Appendix B) ----
+    - alabama -> al
+    - alaska -> ak
+    - arizona -> az
+    - arkansas -> ar
+    - california -> ca
+    - colorado -> co
+    - connecticut -> ct
+    - delaware -> de
+    - "district of columbia -> dc"
+    - florida -> fl
+    - georgia -> ga
+    - hawaii -> hi
+    - idaho -> id
+    - illinois -> il
+    - indiana -> in
+    - iowa -> ia
+    - kansas -> ks
+    - kentucky -> ky
+    - louisiana -> la
+    - maine -> me
+    - maryland -> md
+    - massachusetts -> ma
+    - michigan -> mi
+    - minnesota -> mn
+    - mississippi -> ms
+    - missouri -> mo
+    - montana -> mt
+    - nebraska -> ne
+    - nevada -> nv
+    - "new hampshire -> nh"
+    - "new jersey -> nj"
+    - "new mexico -> nm"
+    - "new york -> ny"
+    - "north carolina -> nc"
+    - "north dakota -> nd"
+    - ohio -> oh
+    - oklahoma -> ok
+    - oregon -> or
+    - pennsylvania -> pa
+    - "rhode island -> ri"
+    - "south carolina -> sc"
+    - "south dakota -> sd"
+    - tennessee -> tn
+    - texas -> tx
+    - utah -> ut
+    - vermont -> vt
+    - virginia -> va
+    - washington -> wa
+    - "west virginia -> wv"
+    - wisconsin -> wi
+    - wyoming -> wy
+
+    # ---- US Territories & Possessions (USPS Pub. 28 Appendix B) ----
+    - "american samoa -> as"
+    - "federated states of micronesia -> fm"
+    - guam -> gu
+    - "marshall islands -> mh"
+    - "northern mariana islands -> mp"
+    - palau -> pw
+    - "puerto rico -> pr"
+    - "virgin islands -> vi"
+
+# Canadian variants
+- lang: en
+  country: ca
+  words:
+    - circuit -> circt
+    - concession -> conc
+    - highlands -> hghlds
+    - parkway -> pky
+    - private -> pvt
+    - subdivision -> subdiv
+    - townline -> tline

@@ -12,3 +12,4 @@ nominatim-project/secondary_importance.sql.gz
 .DS_STORE
 .pgdata/
 *.log
+*.sqlite

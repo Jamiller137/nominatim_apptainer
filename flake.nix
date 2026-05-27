@@ -90,12 +90,19 @@
               python313Packages.mkdocstrings
               python313Packages.mkdocs-material
               python313Packages.mkdocs-gen-files
+              python313Packages.aiosqlite
+              sqlite
+              spatialite-tools
+              libspatialite
             ];
 
             shellHook = ''
               export PGDATA="$PWD/.pgdata"
               export PGHOST=/tmp
               export PGDATABASE=nominatim
+              export LIBSPATIALITE_PATH="${pkgs.libspatialite}/lib/mod_spatialite"
+              export DYLD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+              export LD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             '';
           };
         }

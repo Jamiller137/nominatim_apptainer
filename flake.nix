@@ -30,16 +30,38 @@
     {
       devShells = forEachSupportedSystem (
         { pkgs, system }:
+        let
+          pgWithExt = pkgs.postgresql.withPackages (p: [ p.postgis ]);
+
+          pg-start = pkgs.writeShellScriptBin "pg-start" ''
+            export PGDATA="''${PGDATA:-$PWD/.pgdata}"
+            if [ ! -d "$PGDATA" ]; then
+              echo "Initializing PostgreSQL with PostGIS..."
+              initdb -D "$PGDATA" --auth=trust --no-locale --encoding=UTF8
+              echo "unix_socket_directories = '/tmp'" >> "$PGDATA/postgresql.conf"
+            fi
+            if ! pg_isready -h /tmp -q 2>/dev/null; then
+              pg_ctl -D "$PGDATA" -l "$PGDATA/server.log" -w start
+              echo "PostgreSQL started."
+            else
+              echo "PostgreSQL already running."
+            fi
+          '';
+
+          pg-stop = pkgs.writeShellScriptBin "pg-stop" ''
+            pg_ctl -D "''${PGDATA:-$PWD/.pgdata}" stop
+          '';
+        in
         {
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               self.formatter.${system}
               wget
-              postgresql
-              postgresqlPackages.postgis
+              pgWithExt
+              pg-start
+              pg-stop
               osm2pgsql
               python313
-              # this is nominatim-db
               nominatim
               python313Packages.nominatim-api
               # deps
@@ -52,15 +74,11 @@
               python313Packages.mwparserfromhell
               python313Packages.pyosmium
               python313Packages.sqlalchemy
-              # asyncpg is apparently not necessary since we are using sqlalchemy >= 2.0
-              # but we will include it anyways
               python313Packages.asyncpg
               python313Packages.falcon
               python313Packages.starlette
               python313Packages.uvicorn
-
-              # Developer deps:
-
+              # Developer deps
               python313Packages.flake8
               python313Packages.mypy
               python313Packages.pytest
@@ -73,6 +91,12 @@
               python313Packages.mkdocs-material
               python313Packages.mkdocs-gen-files
             ];
+
+            shellHook = ''
+              export PGDATA="$PWD/.pgdata"
+              export PGHOST=/tmp
+              export PGDATABASE=nominatim
+            '';
           };
         }
       );
@@ -80,3 +104,4 @@
       formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);
     };
 }
+

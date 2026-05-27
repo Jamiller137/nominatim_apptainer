@@ -1,0 +1,59 @@
+query-preprocessing:
+    - step: regex_replace
+      replacements:
+        # Normalize "P.O. Box"
+        - pattern: '\bp\.?\s*o\.?\s*box\b'
+          replace: 'po box'
+    - step: normalize
+
+normalization:
+    - ":: NFD ()"                         # decompose accents
+    - ":: [:Nonspacing Mark:] Remove ()"  # drop diacritics
+    - ":: lower ()"                       # lower-case
+    - "'#' > ''"                          # strip apartment '#'
+    - "[[:Punctuation:]-[-]] > ' '"       # punctuation -> space, keep hyphen
+    - "[:Space:]+ > ' '"                  # collapse whitespace
+
+transliteration:
+    - ":: Latin ()"
+    - ":: Ascii ()"
+    - "[:Space:]+ > ' '"
+
+sanitizers:
+    - step: split-name-list
+      delimiters: ',;'
+    - step: strip-brace-terms
+    - step: clean-tiger-tags
+    - step: clean-housenumbers
+      filter-kind:
+        - housenumber
+        - streetnumber
+        - conscriptionnumber
+      delimiters: ',;'
+      expand-interpolations: true
+    - step: clean-postcodes
+      convert-to-address: yes
+      default-pattern: '[0-9]{5}(-[0-9]{4})?'
+    - step: tag-analyzer-by-language
+      mode: append
+      whitelist: [en, es]
+      use-defaults: mono
+
+token-analysis:
+    - analyzer: generic
+      variants:
+      #  - !include /app/variants-us.yaml
+      #  to be included
+
+      mutations:
+        # 'and' / '&' equivalence in street names
+        - pattern: ' and '
+          replacements: [' and ', ' & ', ' ']
+
+    # Specialized analyzer for US house numbers (e.g. "123-A", "123 1/2")
+    - id: '@housenumber'
+      analyzer: housenumbers
+
+    # Specialized analyzer for ZIP / ZIP+4
+    - id: '@postcode'
+      analyzer: postcodes

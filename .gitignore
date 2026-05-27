@@ -1,10 +1,12 @@
-nominatim_project/iowa-latest.osm.pbf
-nominatim_project/us-midwest-251012.osm.pbf
-nominatim_project/us_postcodes.csv.gz
-nominatim_project/tiger-nominatim-preprocessed-latest.csv.tar.gz
-nominatim_project/wikimedia-importance.csv.gz
-nominatim_project/secondary_importance.sql.gz
+nominatim-project/iowa-latest.osm.pbf
+nominatim-project/us-midwest-251012.osm.pbf
+nominatim-project/us_postcodes.csv.gz
+nominatim-project/gb_postcodes.csv.gz
+nominatim-project/tiger-nominatim-preprocessed-latest.csv.tar.gz
+nominatim-project/wikimedia-importance.csv.gz
+nominatim-project/secondary_importance.sql.gz
 
 *.sif
 .direnv
 .envrc
+

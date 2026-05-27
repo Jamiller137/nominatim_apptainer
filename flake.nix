@@ -34,6 +34,7 @@
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               self.formatter.${system}
+              wget
               postgresql
               postgresqlPackages.postgis
               osm2pgsql

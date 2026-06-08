@@ -103,6 +103,8 @@
               export LIBSPATIALITE_PATH="${pkgs.libspatialite}/lib/mod_spatialite"
               export DYLD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
               export LD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+              export SPATIALITE_LIBRARY=$(find /nix/store -name "mod_spatialite*" -print -quit 2>/dev/null)
+
             '';
           };
         }

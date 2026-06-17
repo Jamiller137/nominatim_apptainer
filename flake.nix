@@ -102,6 +102,9 @@
               python313Packages.mkdocs-material
               python313Packages.mkdocs-gen-files
               python313Packages.aiosqlite
+              python313Packages.pandas
+              python313Packages.numpy
+              python313Packages.polars
               sqlite
               spatialite-tools
               libspatialite

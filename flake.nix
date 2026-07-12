@@ -138,6 +138,26 @@
       );
 
       formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);
+
+      apps = forEachSupportedSystem (
+        { pkgs, system }:
+        {
+          convert-to-sif = {
+            type = "app";
+            program = toString (pkgs.writeShellScript "convert-to-sif" ''
+              set -euo pipefail
+              if [ ! -e result ]; then
+                nix build .#container
+              fi
+              cp -L result nominatim-env.tar.gz
+              apptainer pull \
+                nominatim-env.sif \
+                docker-archive://$PWD/nominatim-env.tar.gz
+            '');
+          };
+        }
+      );
+
     };
 }
 

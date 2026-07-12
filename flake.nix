@@ -74,6 +74,7 @@
               osm2pgsql
               python313
               nominatim
+              python313Packages.pip
               python313Packages.nominatim-api
               # deps
               python313Packages.psycopg
@@ -112,17 +113,26 @@
             ];
 
             shellHook = ''
-              # This is for initial nominatim database build
               export PGDATA="$PWD/.pgdata"
               export PGHOST=/tmp
               export PGDATABASE=nominatim
               export LIBSPATIALITE_PATH="${pkgs.libspatialite}/lib/mod_spatialite"
               export LD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               export SPATIALITE_LIBRARY="${pkgs.libspatialite}/lib/mod_spatialite.dylib"
-              
-              # This is for sqlite queries
               export DYLD_LIBRARY_PATH="${pkgs.libspatialite}/lib''${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
             '';
+          };
+        }
+      );
+
+      packages = forEachSupportedSystem (
+        { pkgs, system }:
+        {
+          container = pkgs.dockerTools.buildNixShellImage {
+            name = "nominatim-env";
+            tag = "latest";
+            drv = self.devShells.${system}.default;
+            compressor = "none";
           };
         }
       );
